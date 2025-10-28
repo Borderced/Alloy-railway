@@ -59,9 +59,9 @@ otelcol.processor.attributes "add_environment" {
   }
   
   output {
-    metrics = [otelcol.exporter.otlp.grafana_cloud.input]
+    metrics = [otelcol.exporter.otlphttp.grafana_cloud.input]
     logs    = [otelcol.exporter.loki.grafana_cloud.input]
-    traces  = [otelcol.exporter.otlp.grafana_cloud.input]
+    traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
   }
 }
 
@@ -84,11 +84,10 @@ loki.write "grafana_cloud" {
 }
 
 // ============================================================================
-// OTLP Exporter - Envía métricas y traces a Grafana Cloud
+// OTLP Exporter - Envía traces a Grafana Cloud Tempo via HTTP
 // ============================================================================
-otelcol.exporter.otlp "grafana_cloud" {
+otelcol.exporter.otlphttp "grafana_cloud" {
   client {
-    // IMPORTANTE: Debe ser el endpoint completo con /otlp
     endpoint = env("OTLP_ENDPOINT")
     
     auth = otelcol.auth.basic.grafana_cloud.handler
@@ -98,10 +97,11 @@ otelcol.exporter.otlp "grafana_cloud" {
       insecure_skip_verify = false
     }
     
-    headers = {
-      "Content-Type" = "application/x-protobuf",
-    }
+    compression = "gzip"
   }
+  
+  traces_endpoint = env("OTLP_ENDPOINT") + "/v1/traces"
+  metrics_endpoint = env("OTLP_ENDPOINT") + "/v1/metrics"
 }
 
 otelcol.auth.basic "grafana_cloud" {
