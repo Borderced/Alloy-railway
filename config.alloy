@@ -88,6 +88,7 @@ loki.write "grafana_cloud" {
 // ============================================================================
 otelcol.exporter.otlp "grafana_cloud" {
   client {
+    // IMPORTANTE: Debe ser el endpoint completo con /otlp
     endpoint = env("OTLP_ENDPOINT")
     
     auth = otelcol.auth.basic.grafana_cloud.handler
@@ -95,6 +96,10 @@ otelcol.exporter.otlp "grafana_cloud" {
     tls {
       insecure = false
       insecure_skip_verify = false
+    }
+    
+    headers = {
+      "Content-Type" = "application/x-protobuf",
     }
   }
 }
