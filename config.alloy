@@ -13,7 +13,7 @@ otelcol.receiver.otlp "faro_receiver" {
     // CORS configuration para permitir requests desde Cloudflare y desarrollo
     cors {
       allowed_origins = [
-        "*"
+        "*",
       ]
       allowed_headers = ["*"]
       max_age = 7200
