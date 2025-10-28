@@ -1,0 +1,8 @@
+[phases.build]
+dependsOn = []
+
+[phases.install]
+dependsOn = []
+
+[start]
+cmd = "echo 'Using Dockerfile'"
