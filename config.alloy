@@ -58,9 +58,9 @@ otelcol.processor.attributes "add_environment" {
   }
   
   output {
-    metrics = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    metrics = [otelcol.exporter.prometheus.grafana_cloud.input]
     logs    = [otelcol.exporter.loki.grafana_cloud.input]
-    traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    traces  = [otelcol.exporter.otlp.grafana_cloud.input]
   }
 }
 
@@ -83,21 +83,18 @@ loki.write "grafana_cloud" {
 }
 
 // ============================================================================
-// OTLP Exporter - Envía traces a Grafana Cloud Tempo via HTTP
+// OTLP Exporter - Envía traces a Grafana Cloud Tempo via gRPC (Oficial)
 // ============================================================================
-otelcol.exporter.otlphttp "grafana_cloud" {
+otelcol.exporter.otlp "grafana_cloud" {
   client {
-    // El endpoint debe incluir /otlp ya que los paths /v1/traces y /v1/metrics se agregan automáticamente
-    endpoint = env("OTLP_ENDPOINT") + "/otlp"
+    // Tempo usa gRPC en puerto 443 (según docs oficiales)
+    endpoint = env("OTLP_ENDPOINT") + ":443"
     
     auth = otelcol.auth.basic.grafana_cloud.handler
     
     tls {
       insecure = false
-      insecure_skip_verify = false
     }
-    
-    compression = "gzip"
   }
 }
 
