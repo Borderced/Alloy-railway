@@ -7,14 +7,13 @@
 otelcol.receiver.otlp "faro_receiver" {
   // HTTP endpoint para recibir datos de Faro
   http {
-    endpoint = "0.0.0.0:4318"
+    // Render requiere escuchar en el puerto asignado por la variable PORT
+    endpoint = "0.0.0.0:" + env("PORT")
     
-    // CORS configuration para permitir requests desde Cloudflare
+    // CORS configuration para permitir requests desde Cloudflare y desarrollo
     cors {
       allowed_origins = [
-        "https://wptassig.dpdns.org",
-        "https://wptassig.pages.dev",
-        "http://localhost:3000",
+        "*"
       ]
       allowed_headers = ["*"]
       max_age = 7200
