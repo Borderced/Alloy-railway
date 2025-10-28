@@ -1,0 +1,12 @@
+# Environment variables con credenciales
+.env
+
+# Datos de Alloy
+data/
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

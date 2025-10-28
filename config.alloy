@@ -1,0 +1,137 @@
+// Grafana Alloy configuration for WPTAssig observability
+// Receives data from Faro Web SDK and forwards to Grafana Cloud
+
+// ============================================================================
+// OTLP HTTP Receiver - Recibe datos de Faro
+// ============================================================================
+otelcol.receiver.otlp "faro_receiver" {
+  // HTTP endpoint para recibir datos de Faro
+  http {
+    endpoint = "0.0.0.0:4318"
+    
+    // CORS configuration para permitir requests desde Cloudflare
+    cors {
+      allowed_origins = [
+        "https://wptassig.dpdns.org",
+        "https://wptassig.pages.dev",
+        "http://localhost:3000",
+      ]
+      allowed_headers = ["*"]
+      max_age = 7200
+    }
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+// ============================================================================
+// Batch Processor - Agrupa datos antes de enviar
+// ============================================================================
+otelcol.processor.batch "default" {
+  timeout = "5s"
+  send_batch_size = 100
+  
+  output {
+    metrics = [otelcol.processor.attributes.add_environment.input]
+    logs    = [otelcol.processor.attributes.add_environment.input]
+    traces  = [otelcol.processor.attributes.add_environment.input]
+  }
+}
+
+// ============================================================================
+// Attributes Processor - Añade metadatos adicionales
+// ============================================================================
+otelcol.processor.attributes "add_environment" {
+  action {
+    key = "deployment.environment"
+    value = "production"
+    action = "insert"
+  }
+  
+  action {
+    key = "service.namespace"
+    value = "wptassig"
+    action = "insert"
+  }
+  
+  output {
+    metrics = [otelcol.exporter.otlp.grafana_cloud.input]
+    logs    = [otelcol.exporter.loki.grafana_cloud.input]
+    traces  = [otelcol.exporter.otlp.grafana_cloud.input]
+  }
+}
+
+// ============================================================================
+// Loki Exporter - Envía logs a Grafana Cloud Loki
+// ============================================================================
+otelcol.exporter.loki "grafana_cloud" {
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+  endpoint {
+    url = env("LOKI_ENDPOINT")
+    
+    basic_auth {
+      username = env("LOKI_USERNAME")
+      password = env("LOKI_PASSWORD")
+    }
+  }
+}
+
+// ============================================================================
+// OTLP Exporter - Envía métricas y traces a Grafana Cloud
+// ============================================================================
+otelcol.exporter.otlp "grafana_cloud" {
+  client {
+    endpoint = env("OTLP_ENDPOINT")
+    
+    auth = otelcol.auth.basic.grafana_cloud.handler
+    
+    tls {
+      insecure = false
+      insecure_skip_verify = false
+    }
+  }
+}
+
+otelcol.auth.basic "grafana_cloud" {
+  username = env("OTLP_USERNAME")
+  password = env("OTLP_PASSWORD")
+}
+
+// ============================================================================
+// Prometheus Remote Write - Envía métricas adicionales
+// ============================================================================
+otelcol.exporter.prometheus "grafana_cloud" {
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = env("PROMETHEUS_ENDPOINT")
+    
+    basic_auth {
+      username = env("PROMETHEUS_USERNAME")
+      password = env("PROMETHEUS_PASSWORD")
+    }
+    
+    queue_config {
+      capacity = 10000
+      max_shards = 200
+      max_samples_per_send = 5000
+    }
+  }
+}
+
+// ============================================================================
+// Logging - Logs internos de Alloy
+// ============================================================================
+logging {
+  level  = "info"
+  format = "json"
+}
