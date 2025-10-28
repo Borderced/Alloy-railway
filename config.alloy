@@ -88,7 +88,8 @@ loki.write "grafana_cloud" {
 // ============================================================================
 otelcol.exporter.otlphttp "grafana_cloud" {
   client {
-    endpoint = env("OTLP_ENDPOINT")
+    // El endpoint debe incluir /otlp ya que los paths /v1/traces y /v1/metrics se agregan automáticamente
+    endpoint = env("OTLP_ENDPOINT") + "/otlp"
     
     auth = otelcol.auth.basic.grafana_cloud.handler
     
@@ -99,9 +100,6 @@ otelcol.exporter.otlphttp "grafana_cloud" {
     
     compression = "gzip"
   }
-  
-  traces_endpoint = env("OTLP_ENDPOINT") + "/v1/traces"
-  metrics_endpoint = env("OTLP_ENDPOINT") + "/v1/metrics"
 }
 
 otelcol.auth.basic "grafana_cloud" {
